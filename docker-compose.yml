@@ -1,0 +1,12 @@
+services:
+  booster-role:
+    image: ghcr.io/mytheclipse/booster-role:latest
+    container_name: booster-role
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - booster-role-data:/app/data
+
+volumes:
+  booster-role-data:

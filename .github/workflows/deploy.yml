@@ -1,0 +1,94 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/booster-role
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BOOSTER_ROLE_ANCHOR_ROLE_ID: ${{ secrets.BOOSTER_ROLE_ANCHOR_ROLE_ID }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: IMAGE_NAME,GHCR_USERNAME,GHCR_TOKEN,DISCORD_TOKEN,DISCORD_CLIENT_ID,DISCORD_GUILD_ID,DATABASE_URL,BOOSTER_ROLE_ANCHOR_ROLE_ID
+          script: |
+            set -eu
+            mkdir -p /opt/booster-role
+            cd /opt/booster-role
+
+            cat > .env <<EOF
+            DISCORD_TOKEN=${DISCORD_TOKEN}
+            DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+            DISCORD_GUILD_ID=${DISCORD_GUILD_ID}
+            DATABASE_URL=${DATABASE_URL:-file:/app/data/booster-role.sqlite}
+            BOOSTER_ROLE_ANCHOR_ROLE_ID=${BOOSTER_ROLE_ANCHOR_ROLE_ID}
+            EOF
+
+            cat > docker-compose.yml <<EOF
+            services:
+              booster-role:
+                image: ${IMAGE_NAME}:latest
+                container_name: booster-role
+                restart: unless-stopped
+                env_file:
+                  - .env
+                volumes:
+                  - booster-role-data:/app/data
+
+            volumes:
+              booster-role-data:
+            EOF
+
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
