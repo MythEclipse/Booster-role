@@ -1,12 +1,12 @@
 # Booster Role Bot
 
-Discord bot untuk memberi role custom kosmetik ke user yang memenuhi syarat boost server 2x. Role dibuat oleh bot, tidak boleh mengambil role yang sudah ada, dan otomatis dihapus saat user tidak lagi eligible.
+Discord bot untuk memberi role custom kosmetik ke user yang sedang boost server. Role dibuat oleh bot, tidak boleh mengambil role yang sudah ada, dan otomatis dihapus saat user tidak lagi eligible.
 
 ## Tech stack
 
 - Bun + TypeScript
 - discord.js
-- SQLite + Drizzle ORM
+- SQLite via `bun:sqlite` + Drizzle schema
 - Bun test runner
 
 ## Prasyarat
@@ -53,7 +53,7 @@ SQLite default tersimpan di `./data/booster-role.sqlite`.
 bun run dev
 ```
 
-Saat startup, bot otomatis register slash command ke guild dari `DISCORD_GUILD_ID`. Pastikan bot di-invite dengan scope `applications.commands`.
+Saat startup, bot otomatis register slash command ke guild dari `DISCORD_GUILD_ID`, lalu menangani interaction command. Pastikan bot di-invite dengan scope `applications.commands`.
 
 ## Testing
 
@@ -75,7 +75,7 @@ Bot ini dirancang supaya aman dari abuse:
 - Icon/logo role opsional hanya bisa dipasang ke role bot-managed milik user tersebut.
 - Attachment icon harus berupa image dan dibatasi ukuran agar tidak disalahgunakan.
 - Permission berbahaya seperti `Administrator`, `ManageRoles`, `ManageChannels`, `BanMembers`, `KickMembers`, `MentionEveryone`, `ManageGuild`, dan `ManageWebhooks` ditolak.
-- Jika eligibility boost tidak bisa diverifikasi, claim ditolak.
+- Jika user tidak sedang boost server, claim ditolak.
 
 ## Slash command target
 
@@ -87,6 +87,6 @@ Command utama yang disiapkan:
 - `/booster-role icon image` - pasang atau ganti logo/icon role milik sendiri.
 - `/booster-role delete` - hapus role milik sendiri.
 
-## Catatan eligibility boost 2x
+## Catatan eligibility boost
 
-Discord tidak selalu menyediakan data jumlah boost per user secara langsung ke bot. Implementasi saat ini memakai batas `verifiedBoostCount` dan fail-closed jika jumlah boost tidak bisa diverifikasi. Untuk production, hubungkan nilai ini ke sumber data yang benar-benar bisa memverifikasi user punya minimal 2 boost aktif.
+Untuk sekarang, user eligible jika sedang boost server (`premiumSince` aktif). Jika user berhenti boost, role bot-managed miliknya akan dihapus lewat event `guildMemberUpdate`.

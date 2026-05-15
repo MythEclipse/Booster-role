@@ -55,7 +55,7 @@ describe("BoosterRoleService", () => {
     const roles = new FakeRoleRepository();
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
 
-    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "My Role", color: "#aabbcc", verifiedBoostCount: 2 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "My Role", color: "#aabbcc", isBoosting: true });
 
     expect(claimed.roleId).toBe("created-2");
     expect(roles.roles.get(claimed.roleId)?.permissions).toEqual([]);
@@ -66,7 +66,7 @@ describe("BoosterRoleService", () => {
   test("rejects claiming an existing unmanaged role name", async () => {
     const service = new BoosterRoleService(new MemoryRoleStore(), new FakeRoleRepository(), { anchorPosition: 10 });
 
-    await expect(service.claimRole({ guildId: "guild", userId: "user", name: "vip", color: null, verifiedBoostCount: 2 })).rejects.toThrow("already used");
+    await expect(service.claimRole({ guildId: "guild", userId: "user", name: "vip", color: null, isBoosting: true })).rejects.toThrow("already used");
   });
 
   test("rejects duplicate claims instead of creating another role", async () => {
@@ -74,16 +74,16 @@ describe("BoosterRoleService", () => {
     const roles = new FakeRoleRepository();
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
 
-    await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, verifiedBoostCount: 2 });
+    await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
 
-    await expect(service.claimRole({ guildId: "guild", userId: "user", name: "Second Role", color: null, verifiedBoostCount: 2 })).rejects.toThrow("already has a booster role");
+    await expect(service.claimRole({ guildId: "guild", userId: "user", name: "Second Role", color: null, isBoosting: true })).rejects.toThrow("already has a booster role");
   });
 
   test("renames only the stored role owned by the user", async () => {
     const store = new MemoryRoleStore();
     const roles = new FakeRoleRepository([]);
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
-    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, verifiedBoostCount: 2 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
 
     await service.renameRole({ guildId: "guild", userId: "user", name: "Renamed" });
 
@@ -95,7 +95,7 @@ describe("BoosterRoleService", () => {
     const store = new MemoryRoleStore();
     const roles = new FakeRoleRepository([]);
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
-    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, verifiedBoostCount: 2 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
 
     await service.setRoleIcon({ guildId: "guild", userId: "user", icon: { contentType: "image/png", size: 128_000, dataUri: "data:image/png;base64,abc" } });
 
@@ -107,7 +107,7 @@ describe("BoosterRoleService", () => {
     const store = new MemoryRoleStore();
     const roles = new FakeRoleRepository([]);
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10, maxIconBytes: 256_000 });
-    await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, verifiedBoostCount: 2 });
+    await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
 
     await expect(service.setRoleIcon({ guildId: "guild", userId: "user", icon: { contentType: "text/html", size: 100, dataUri: "data:text/html;base64,abc" } })).rejects.toThrow("Role icon must be an image");
     await expect(service.setRoleIcon({ guildId: "guild", userId: "user", icon: { contentType: "image/png", size: 256_001, dataUri: "data:image/png;base64,abc" } })).rejects.toThrow("Role icon is too large");
@@ -117,7 +117,7 @@ describe("BoosterRoleService", () => {
     const store = new MemoryRoleStore();
     const roles = new FakeRoleRepository([]);
     const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
-    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, verifiedBoostCount: 2 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
 
     await service.removeRoleForLostBoost({ guildId: "guild", userId: "user" });
 

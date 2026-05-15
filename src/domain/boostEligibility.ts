@@ -1,13 +1,9 @@
 export type BoostEligibilityInput = {
-  verifiedBoostCount: number | null;
+  isBoosting: boolean;
 };
 
 export function assertBoostEligibility(input: BoostEligibilityInput): void {
-  if (input.verifiedBoostCount === null) {
-    throw new Error("Boost eligibility cannot be verified");
-  }
-
-  if (input.verifiedBoostCount < 2) {
-    throw new Error("User must have at least two server boosts to claim a custom role");
+  if (!input.isBoosting) {
+    throw new Error("User must be currently boosting to claim a custom role");
   }
 }

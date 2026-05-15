@@ -13,6 +13,7 @@ export type BoosterRoleRecord = {
   roleId: string;
   name: string;
   color: string | null;
+  icon: string | null;
   createdAt: number;
   updatedAt: number;
 };
@@ -58,10 +59,11 @@ export class BoosterRoleService {
     userId: string;
     name: string;
     color: string | null;
-    verifiedBoostCount: number | null;
+    icon?: RoleIcon | null;
+    isBoosting: boolean;
   }): Promise<BoosterRoleRecord> {
-    const { guildId, userId, verifiedBoostCount } = input;
-    assertBoostEligibility({ verifiedBoostCount });
+    const { guildId, userId, isBoosting } = input;
+    assertBoostEligibility({ isBoosting });
 
     const existingRecord = await this.store.findByUser(guildId, userId);
     if (existingRecord) {
@@ -76,6 +78,11 @@ export class BoosterRoleService {
     assertRolePositionIsSafe(position, this.options.anchorPosition);
 
     const role = await this.roles.createRole({ name, color, permissions: [], position });
+    if (input.icon) {
+      this.validateRoleIcon(input.icon);
+      await this.roles.updateRole(role.id, { icon: input.icon.dataUri });
+    }
+
     const timestamp = this.now();
     const record = {
       guildId,
@@ -83,6 +90,7 @@ export class BoosterRoleService {
       roleId: role.id,
       name,
       color,
+      icon: input.icon?.dataUri ?? null,
       createdAt: timestamp,
       updatedAt: timestamp
     };

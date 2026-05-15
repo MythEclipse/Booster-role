@@ -1,4 +1,5 @@
 import { loadConfig } from "./config";
+import { attachBotHandlers } from "./discord/bot";
 import { createDiscordClient } from "./discord/client";
 import { registerGuildCommandsWithToken } from "./discord/registerCommands";
 
@@ -9,6 +10,7 @@ await registerGuildCommandsWithToken(config.discordToken, {
 });
 
 const client = createDiscordClient();
+attachBotHandlers(client, config);
 
 client.once("clientReady", () => {
   console.log(`Logged in as ${client.user?.tag ?? "unknown bot"}`);
