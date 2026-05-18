@@ -43,7 +43,7 @@ export class DiscordRoleRepository implements RoleRepository {
     if (!this.anchorRoleId) return fallbackPosition;
 
     const anchor = await this.fetchRole(this.anchorRoleId);
-    return Math.max(anchor.position - 1, 1);
+    return Math.max(anchor.position, 1);
   }
 
   private async fetchRole(roleId: string): Promise<Role> {
