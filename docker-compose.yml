@@ -2,7 +2,7 @@ services:
   booster-role:
     image: ghcr.io/mytheclipse/booster-role:latest
     container_name: booster-role
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     volumes:
