@@ -1,4 +1,4 @@
-import { integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { bigint, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const boosterRoles = pgTable(
   "booster_roles",
@@ -9,8 +9,8 @@ export const boosterRoles = pgTable(
     name: text("name").notNull(),
     color: text("color"),
     icon: text("icon"),
-    createdAt: integer("created_at").notNull(),
-    updatedAt: integer("updated_at").notNull()
+    createdAt: bigint("created_at", { mode: "number" }).notNull(),
+    updatedAt: bigint("updated_at", { mode: "number" }).notNull()
   },
   (table) => ({
     userIdx: uniqueIndex("booster_roles_guild_user_idx").on(table.guildId, table.userId),

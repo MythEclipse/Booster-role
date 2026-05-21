@@ -120,4 +120,16 @@ describe("handleInteraction", () => {
 
     expect(interaction.replies[0]).toEqual({ content: "Role name is already used", flags: MessageFlags.Ephemeral });
   });
+
+  test("hides failed query details from user replies", async () => {
+    const interaction = new FakeInteraction("claim", { name: "VIP" });
+    const service = new FakeService();
+    service.claimRole = async () => {
+      throw new Error("Failed query: insert into booster_roles params: secret");
+    };
+
+    await handleInteraction(interaction, service, { isBoosting: async () => true });
+
+    expect(interaction.replies[0]).toEqual({ content: "Failed to save booster role. Any created role was cleaned up. Try again.", flags: MessageFlags.Ephemeral });
+  });
 });

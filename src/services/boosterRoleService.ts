@@ -29,6 +29,7 @@ export type RoleRepository = {
   createRole(input: { name: string; color: string | null; permissions: string[]; position: number }): Promise<{ id: string }>;
   updateRole(roleId: string, input: { name?: string; color?: string | null; icon?: string | null }): Promise<void>;
   assignRole(userId: string, roleId: string): Promise<void>;
+  removeRole(userId: string, roleId: string): Promise<void>;
   deleteRole(roleId: string): Promise<void>;
 };
 
@@ -79,27 +80,35 @@ export class BoosterRoleService {
     assertRolePositionIsSafe(position, this.options.anchorPosition);
 
     const role = await this.roles.createRole({ name, color, permissions: [], position });
-    if (input.icon) {
-      this.validateRoleIcon(input.icon);
-      await this.roles.updateRole(role.id, { icon: input.icon.dataUri });
+    let assigned = false;
+
+    try {
+      if (input.icon) {
+        this.validateRoleIcon(input.icon);
+        await this.roles.updateRole(role.id, { icon: input.icon.dataUri });
+      }
+
+      await this.roles.assignRole(userId, role.id);
+      assigned = true;
+
+      const timestamp = this.now();
+      const record = {
+        guildId,
+        userId,
+        roleId: role.id,
+        name,
+        color,
+        icon: input.icon?.dataUri ?? null,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      };
+
+      await this.store.create(record);
+      return record;
+    } catch (error) {
+      await this.rollbackClaim({ guildId, userId, roleId: role.id, assigned });
+      throw error;
     }
-
-    await this.roles.assignRole(userId, role.id);
-
-    const timestamp = this.now();
-    const record = {
-      guildId,
-      userId,
-      roleId: role.id,
-      name,
-      color,
-      icon: input.icon?.dataUri ?? null,
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-
-    await this.store.create(record);
-    return record;
   }
 
   async renameRole(input: { guildId: string; userId: string; name: string }): Promise<void> {
@@ -139,6 +148,15 @@ export class BoosterRoleService {
     await this.store.delete(guildId, userId);
   }
 
+  private async rollbackClaim(input: { guildId: string; userId: string; roleId: string; assigned: boolean }): Promise<void> {
+    if (input.assigned) {
+      await ignoreRollbackError(() => this.roles.removeRole(input.userId, input.roleId));
+    }
+
+    await ignoreRollbackError(() => this.roles.deleteRole(input.roleId));
+    await ignoreRollbackError(() => this.store.delete(input.guildId, input.userId));
+  }
+
   private validateRoleIcon(icon: RoleIcon): void {
     if (!icon.contentType.startsWith("image/")) {
       throw new Error("Role icon must be an image");
@@ -155,5 +173,12 @@ export class BoosterRoleService {
       throw new Error("No booster role found for this user");
     }
     return record;
+  }
+}
+
+async function ignoreRollbackError(action: () => Promise<void>): Promise<void> {
+  try {
+    await action();
+  } catch {
   }
 }

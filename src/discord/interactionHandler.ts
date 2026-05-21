@@ -95,8 +95,22 @@ export async function handleInteraction(
     throw new Error("Unknown booster-role subcommand");
   } catch (error) {
     logger.warn("Booster-role command failed", { error });
-    await interaction.reply({ content: error instanceof Error ? error.message : "Command failed", flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: toUserErrorMessage(error), flags: MessageFlags.Ephemeral });
   }
+}
+
+function toUserErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return "Command failed";
+
+  if (error.message.includes("Failed query")) {
+    return "Failed to save booster role. Any created role was cleaned up. Try again.";
+  }
+
+  if (error.message.includes("Missing Permissions")) {
+    return "Bot is missing permissions or role position to manage this role.";
+  }
+
+  return error.message;
 }
 
 function requireGuildId(guildId: string | null): string {

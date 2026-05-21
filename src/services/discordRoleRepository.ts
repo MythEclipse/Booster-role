@@ -2,7 +2,9 @@ import type { ColorResolvable, Guild, Role } from "discord.js";
 import type { RoleRepository } from "./boosterRoleService";
 
 export class DiscordRoleRepository implements RoleRepository {
-  constructor(private readonly guild: Guild, private readonly anchorRoleId: string | null) {}
+  constructor(private readonly guild: Guild, anchorRoleId: string | null) {
+    void anchorRoleId;
+  }
 
   async listRoles() {
     await this.guild.roles.fetch();
@@ -32,6 +34,11 @@ export class DiscordRoleRepository implements RoleRepository {
   async assignRole(userId: string, roleId: string): Promise<void> {
     const member = await this.guild.members.fetch(userId);
     await member.roles.add(roleId);
+  }
+
+  async removeRole(userId: string, roleId: string): Promise<void> {
+    const member = await this.guild.members.fetch(userId);
+    await member.roles.remove(roleId);
   }
 
   async deleteRole(roleId: string): Promise<void> {

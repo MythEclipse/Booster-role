@@ -17,10 +17,17 @@ class MemoryRoleStore {
   }
 }
 
+class FailingCreateRoleStore extends MemoryRoleStore {
+  async create(): Promise<void> {
+    throw new Error("Database insert failed");
+  }
+}
+
 class FakeRoleRepository implements RoleRepository {
   roles = new Map<string, { id: string; name: string; permissions: string[]; position: number; color: string | null; icon?: string | null }>();
   deletedRoleIds: string[] = [];
   assignedRoles: Array<{ userId: string; roleId: string }> = [];
+  removedRoles: Array<{ userId: string; roleId: string }> = [];
 
   constructor(initialRoles = [{ id: "existing-vip", name: "VIP", permissions: [], position: 1, color: null }]) {
     for (const role of initialRoles) {
@@ -46,6 +53,10 @@ class FakeRoleRepository implements RoleRepository {
 
   async assignRole(userId: string, roleId: string) {
     this.assignedRoles.push({ userId, roleId });
+  }
+
+  async removeRole(userId: string, roleId: string) {
+    this.removedRoles.push({ userId, roleId });
   }
 
   async deleteRole(roleId: string) {
@@ -129,5 +140,17 @@ describe("BoosterRoleService", () => {
 
     expect(roles.deletedRoleIds).toEqual([claimed.roleId]);
     expect(await store.findByUser("guild", "user")).toBeNull();
+  });
+
+  test("rolls back created and assigned role when storing claim fails", async () => {
+    const roles = new FakeRoleRepository([]);
+    const service = new BoosterRoleService(new FailingCreateRoleStore(), roles, { anchorPosition: 10 });
+
+    await expect(service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true })).rejects.toThrow("Database insert failed");
+
+    expect(roles.assignedRoles).toEqual([{ userId: "user", roleId: "created-1" }]);
+    expect(roles.removedRoles).toEqual([{ userId: "user", roleId: "created-1" }]);
+    expect(roles.deletedRoleIds).toEqual(["created-1"]);
+    expect(roles.roles.has("created-1")).toBe(false);
   });
 });
