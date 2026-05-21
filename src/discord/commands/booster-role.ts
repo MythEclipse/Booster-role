@@ -29,4 +29,10 @@ export const boosterRoleCommand = new SlashCommandBuilder()
       .setDescription("Set an optional icon on your bot-managed booster role")
       .addAttachmentOption((option) => option.setName("image").setDescription("Role icon image").setRequired(true))
   )
-  .addSubcommand((command) => command.setName("delete").setDescription("Delete your bot-managed booster role"));
+  .addSubcommand((command) => command.setName("delete").setDescription("Delete your bot-managed booster role"))
+  .addSubcommand((command) =>
+    command
+      .setName("admin-delete")
+      .setDescription("Delete another user's bot-managed booster role")
+      .addUserOption((option) => option.setName("user").setDescription("User whose booster role should be deleted").setRequired(true))
+  );

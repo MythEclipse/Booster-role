@@ -5,8 +5,3 @@ services:
     restart: always
     env_file:
       - .env
-    volumes:
-      - booster-role-data:/app/data
-
-volumes:
-  booster-role-data:

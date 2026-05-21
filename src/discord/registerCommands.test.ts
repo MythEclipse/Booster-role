@@ -20,7 +20,11 @@ describe("registerGuildCommands", () => {
 
     expect(rest.route).toBe("/applications/client/guilds/guild/commands");
     expect(rest.body).toEqual([
-      expect.objectContaining({ name: "booster-role", description: "Manage your cosmetic booster role" })
+      expect.objectContaining({
+        name: "booster-role",
+        description: "Manage your cosmetic booster role",
+        options: expect.arrayContaining([expect.objectContaining({ name: "admin-delete" })])
+      })
     ]);
   });
 });

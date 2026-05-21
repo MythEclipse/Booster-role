@@ -6,7 +6,7 @@ Discord bot untuk memberi role custom kosmetik ke user yang sedang boost server.
 
 - Bun + TypeScript
 - discord.js
-- SQLite via `bun:sqlite` + Drizzle schema
+- PostgreSQL via Drizzle ORM
 - Bun test runner
 
 ## Prasyarat
@@ -30,7 +30,7 @@ Isi `.env`:
 DISCORD_TOKEN=token_bot_discord
 DISCORD_CLIENT_ID=client_id_aplikasi_discord
 DISCORD_GUILD_ID=id_server_discord
-DATABASE_URL=file:./data/booster-role.sqlite
+DATABASE_URL=postgresql://booster_role:booster_role@localhost:5432/booster_role
 BOOSTER_ROLE_ANCHOR_ROLE_ID=id_role_pembatas_opsional
 ```
 
@@ -45,7 +45,7 @@ bun run db:generate
 bun run db:migrate
 ```
 
-SQLite default tersimpan di `./data/booster-role.sqlite`.
+Pastikan `DATABASE_URL` mengarah ke database PostgreSQL external sebelum menjalankan migration.
 
 ## Menjalankan bot
 
@@ -86,6 +86,7 @@ Command utama yang disiapkan:
 - `/booster-role recolor color` - ubah warna role milik sendiri.
 - `/booster-role icon image` - pasang atau ganti logo/icon role milik sendiri.
 - `/booster-role delete` - hapus role milik sendiri.
+- `/booster-role admin-delete user` - admin dengan permission `Administrator` bisa hapus role custom user lain. User target bisa claim lagi jika masih eligible.
 
 ## Catatan eligibility boost
 

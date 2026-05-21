@@ -9,6 +9,5 @@ COPY tsconfig.json ./
 COPY src ./src
 
 ENV NODE_ENV=production
-ENV DATABASE_URL=file:/app/data/booster-role.sqlite
 
 CMD ["bun", "run", "src/index.ts"]

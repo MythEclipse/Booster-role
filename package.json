@@ -14,7 +14,8 @@
   "dependencies": {
     "@discordjs/builders": "latest",
     "discord.js": "latest",
-    "drizzle-orm": "latest"
+    "drizzle-orm": "latest",
+    "postgres": "latest"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

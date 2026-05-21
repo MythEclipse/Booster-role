@@ -1,15 +1,17 @@
-import { MessageFlags } from "discord.js";
+import { MessageFlags, PermissionFlagsBits } from "discord.js";
 import type { BoosterRoleRecord, RoleIcon } from "../services/boosterRoleService";
 
 export type ChatInputInteractionLike = {
   commandName: string;
   guildId: string | null;
   user: { id: string };
+  memberPermissions: { has(permission: bigint): boolean } | null;
   isChatInputCommand(): boolean;
   reply(input: { content: string; flags: MessageFlags.Ephemeral }): Promise<unknown>;
   options: {
     getSubcommand(): string;
     getString(name: string): string | null;
+    getUser(name: string): { id: string } | null;
     getAttachment(name: string): { contentType: string | null; size: number; url: string } | null;
   };
 };
@@ -75,6 +77,13 @@ export async function handleInteraction(
       return;
     }
 
+    if (subcommand === "admin-delete") {
+      requireAdministrator(interaction);
+      await service.deleteRole({ guildId, userId: requireUser(interaction, "user").id });
+      await interaction.reply({ content: "Booster role deleted by admin.", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
     throw new Error("Unknown booster-role subcommand");
   } catch (error) {
     await interaction.reply({ content: error instanceof Error ? error.message : "Command failed", flags: MessageFlags.Ephemeral });
@@ -90,6 +99,18 @@ function requireString(interaction: ChatInputInteractionLike, name: string): str
   const value = interaction.options.getString(name);
   if (!value) throw new Error(`${name} is required`);
   return value;
+}
+
+function requireUser(interaction: ChatInputInteractionLike, name: string): { id: string } {
+  const value = interaction.options.getUser(name);
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
+function requireAdministrator(interaction: ChatInputInteractionLike): void {
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+    throw new Error("Administrator permission is required");
+  }
 }
 
 function requireIcon(interaction: ChatInputInteractionLike, name: string): RoleIcon {

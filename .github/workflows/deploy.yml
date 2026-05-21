@@ -69,7 +69,7 @@ jobs:
             DISCORD_TOKEN=${DISCORD_TOKEN}
             DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
             DISCORD_GUILD_ID=${DISCORD_GUILD_ID}
-            DATABASE_URL=${DATABASE_URL:-file:/app/data/booster-role.sqlite}
+            DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
             BOOSTER_ROLE_ANCHOR_ROLE_ID=${BOOSTER_ROLE_ANCHOR_ROLE_ID}
             EOF
 
@@ -81,11 +81,6 @@ jobs:
                 restart: unless-stopped
                 env_file:
                   - .env
-                volumes:
-                  - booster-role-data:/app/data
-
-            volumes:
-              booster-role-data:
             EOF
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin

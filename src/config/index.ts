@@ -11,7 +11,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     discordToken: requireEnv(env, "DISCORD_TOKEN"),
     discordClientId: requireEnv(env, "DISCORD_CLIENT_ID"),
     discordGuildId: requireEnv(env, "DISCORD_GUILD_ID"),
-    databaseUrl: env.DATABASE_URL ?? "file:./data/booster-role.sqlite",
+    databaseUrl: env.DATABASE_URL ?? "postgresql://booster_role:booster_role@localhost:5432/booster_role",
     boosterRoleAnchorRoleId: env.BOOSTER_ROLE_ANCHOR_ROLE_ID ?? null
   };
 }

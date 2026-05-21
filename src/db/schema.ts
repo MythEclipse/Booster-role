@@ -1,6 +1,6 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
-export const boosterRoles = sqliteTable(
+export const boosterRoles = pgTable(
   "booster_roles",
   {
     guildId: text("guild_id").notNull(),

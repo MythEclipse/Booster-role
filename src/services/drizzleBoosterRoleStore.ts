@@ -11,18 +11,14 @@ type DatabaseLike = {
     };
   };
   insert(table: typeof boosterRoles): {
-    values(record: BoosterRoleRecord): {
-      run(): unknown;
-    };
+    values(record: BoosterRoleRecord): Promise<unknown> | unknown;
   };
   delete(table: typeof boosterRoles): {
-    where(condition: unknown): {
-      run(): unknown;
-    };
+    where(condition: unknown): Promise<unknown> | unknown;
   };
 };
 
-export class SqliteBoosterRoleStore implements BoosterRoleStore {
+export class DrizzleBoosterRoleStore implements BoosterRoleStore {
   constructor(private readonly db: DatabaseLike) {}
 
   async findByUser(guildId: string, userId: string): Promise<BoosterRoleRecord | null> {
@@ -36,13 +32,12 @@ export class SqliteBoosterRoleStore implements BoosterRoleStore {
   }
 
   async create(record: BoosterRoleRecord): Promise<void> {
-    await this.db.insert(boosterRoles).values(record).run();
+    await this.db.insert(boosterRoles).values(record);
   }
 
   async delete(guildId: string, userId: string): Promise<void> {
     await this.db
       .delete(boosterRoles)
-      .where(and(eq(boosterRoles.guildId, guildId), eq(boosterRoles.userId, userId)))
-      .run();
+      .where(and(eq(boosterRoles.guildId, guildId), eq(boosterRoles.userId, userId)));
   }
 }

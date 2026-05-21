@@ -1,16 +1,15 @@
-import { Database } from "bun:sqlite";
 import type { Client } from "discord.js";
 import type { AppConfig } from "../config";
-import { prepareSqlitePath } from "../db/sqlitePath";
+import { createDb } from "../db";
 import { BoosterRoleService } from "../services/boosterRoleService";
-import { BunSqliteBoosterRoleStore } from "../services/bunSqliteBoosterRoleStore";
+import { DrizzleBoosterRoleStore } from "../services/drizzleBoosterRoleStore";
 import { DiscordRoleRepository } from "../services/discordRoleRepository";
 import { handleGuildMemberUpdate } from "./events/guildMemberUpdate";
 import { handleInteraction } from "./interactionHandler";
 
 export function attachBotHandlers(client: Client, config: AppConfig): void {
-  const db = new Database(prepareSqlitePath(config.databaseUrl));
-  const store = new BunSqliteBoosterRoleStore(db);
+  const db = createDb(config.databaseUrl);
+  const store = new DrizzleBoosterRoleStore(db);
 
   client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand() || !interaction.guild) return;
