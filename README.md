@@ -32,6 +32,8 @@ DISCORD_CLIENT_ID=client_id_aplikasi_discord
 DISCORD_GUILD_ID=id_server_discord
 DATABASE_URL=postgresql://booster_role:booster_role@localhost:5432/booster_role
 BOOSTER_ROLE_ANCHOR_ROLE_ID=id_role_pembatas_opsional
+BOOSTER_ELIGIBILITY_ROLE_ID=1206431347925852162
+LOG_LEVEL=info
 ```
 
 `BOOSTER_ROLE_ANCHOR_ROLE_ID` dipakai sebagai batas posisi role. Role booster custom harus berada di bawah role ini agar tetap kosmetik dan tidak menyentuh role staff/admin.
@@ -75,7 +77,7 @@ Bot ini dirancang supaya aman dari abuse:
 - Icon/logo role opsional hanya bisa dipasang ke role bot-managed milik user tersebut.
 - Attachment icon harus berupa image dan dibatasi ukuran agar tidak disalahgunakan.
 - Permission berbahaya seperti `Administrator`, `ManageRoles`, `ManageChannels`, `BanMembers`, `KickMembers`, `MentionEveryone`, `ManageGuild`, dan `ManageWebhooks` ditolak.
-- Jika user tidak sedang boost server, claim ditolak.
+- Jika user tidak punya role booster eligibility dari `BOOSTER_ELIGIBILITY_ROLE_ID`, claim ditolak.
 
 ## Slash command target
 
@@ -90,4 +92,4 @@ Command utama yang disiapkan:
 
 ## Catatan eligibility boost
 
-Untuk sekarang, user eligible jika sedang boost server (`premiumSince` aktif). Jika user berhenti boost, role bot-managed miliknya akan dihapus lewat event `guildMemberUpdate`.
+Untuk sekarang, user eligible jika punya role dari `BOOSTER_ELIGIBILITY_ROLE_ID`. Jika role ini hilang dari user, role bot-managed miliknya akan dihapus lewat event `guildMemberUpdate`.

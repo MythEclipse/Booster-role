@@ -4,6 +4,7 @@ export type AppConfig = {
   discordGuildId: string;
   databaseUrl: string;
   boosterRoleAnchorRoleId: string | null;
+  boosterEligibilityRoleId: string;
 };
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): AppConfig {
@@ -12,7 +13,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     discordClientId: requireEnv(env, "DISCORD_CLIENT_ID"),
     discordGuildId: requireEnv(env, "DISCORD_GUILD_ID"),
     databaseUrl: env.DATABASE_URL ?? "postgresql://booster_role:booster_role@localhost:5432/booster_role",
-    boosterRoleAnchorRoleId: env.BOOSTER_ROLE_ANCHOR_ROLE_ID ?? null
+    boosterRoleAnchorRoleId: env.BOOSTER_ROLE_ANCHOR_ROLE_ID ?? null,
+    boosterEligibilityRoleId: env.BOOSTER_ELIGIBILITY_ROLE_ID ?? "1206431347925852162"
   };
 }
 

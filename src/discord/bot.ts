@@ -21,7 +21,7 @@ export function attachBotHandlers(client: Client, config: AppConfig): void {
     );
 
     await handleInteraction(interaction, service, {
-      isBoosting: async () => Boolean(interaction.member && "premiumSince" in interaction.member && interaction.member.premiumSince)
+      isBoosting: async () => memberHasRole(interaction.member, config.boosterEligibilityRoleId)
     });
   });
 
@@ -32,13 +32,31 @@ export function attachBotHandlers(client: Client, config: AppConfig): void {
       { anchorPosition: resolveAnchorPosition(newMember.guild, config.boosterRoleAnchorRoleId) }
     );
 
-    await handleGuildMemberUpdate(oldMember, newMember, service);
+    await handleGuildMemberUpdate(oldMember, newMember, service, config.boosterEligibilityRoleId);
   });
 }
 
+function memberHasRole(member: unknown, roleId: string): boolean {
+  return Boolean(
+    member &&
+      typeof member === "object" &&
+      "roles" in member &&
+      member.roles &&
+      typeof member.roles === "object" &&
+      "cache" in member.roles &&
+      member.roles.cache &&
+      typeof member.roles.cache === "object" &&
+      "has" in member.roles.cache &&
+      typeof member.roles.cache.has === "function" &&
+      member.roles.cache.has(roleId)
+  );
+}
+
 function resolveAnchorPosition(guild: { members: { me: { roles: { highest: { position: number } } } | null }; roles: { cache: { get(id: string): { position: number } | undefined } } }, anchorRoleId: string | null): number {
-  if (!anchorRoleId) return botRolePosition(guild);
-  return guild.roles.cache.get(anchorRoleId)?.position ?? botRolePosition(guild);
+  const botPosition = botRolePosition(guild);
+  if (!anchorRoleId) return botPosition;
+  const anchorPosition = guild.roles.cache.get(anchorRoleId)?.position ?? botPosition;
+  return Math.min(anchorPosition, botPosition);
 }
 
 function botRolePosition(guild: { members: { me: { roles: { highest: { position: number } } } | null } }): number {

@@ -1,4 +1,5 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { logger } from "../logger";
 import type { BoosterRoleRecord, RoleIcon } from "../services/boosterRoleService";
 
 export type ChatInputInteractionLike = {
@@ -41,6 +42,7 @@ export async function handleInteraction(
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === "claim") {
+      logger.info("Handling booster-role command", { guildId, userId, subcommand });
       const role = await service.claimRole({
         guildId,
         userId,
@@ -54,24 +56,28 @@ export async function handleInteraction(
     }
 
     if (subcommand === "rename") {
+      logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.renameRole({ guildId, userId, name: requireString(interaction, "name") });
       await interaction.reply({ content: "Booster role renamed.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (subcommand === "recolor") {
+      logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.recolorRole({ guildId, userId, color: requireString(interaction, "color") });
       await interaction.reply({ content: "Booster role color updated.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (subcommand === "icon") {
+      logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.setRoleIcon({ guildId, userId, icon: requireIcon(interaction, "image") });
       await interaction.reply({ content: "Booster role icon updated.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     if (subcommand === "delete") {
+      logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.deleteRole({ guildId, userId });
       await interaction.reply({ content: "Booster role deleted.", flags: MessageFlags.Ephemeral });
       return;
@@ -79,13 +85,16 @@ export async function handleInteraction(
 
     if (subcommand === "admin-delete") {
       requireAdministrator(interaction);
-      await service.deleteRole({ guildId, userId: requireUser(interaction, "user").id });
+      const targetUserId = requireUser(interaction, "user").id;
+      logger.info("Handling booster-role admin command", { guildId, userId, subcommand, targetUserId });
+      await service.deleteRole({ guildId, userId: targetUserId });
       await interaction.reply({ content: "Booster role deleted by admin.", flags: MessageFlags.Ephemeral });
       return;
     }
 
     throw new Error("Unknown booster-role subcommand");
   } catch (error) {
+    logger.warn("Booster-role command failed", { error });
     await interaction.reply({ content: error instanceof Error ? error.message : "Command failed", flags: MessageFlags.Ephemeral });
   }
 }
