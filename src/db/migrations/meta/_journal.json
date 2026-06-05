@@ -15,6 +15,13 @@
       "when": 1779352840357,
       "tag": "0001_misty_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780681661765,
+      "tag": "0002_regular_green_goblin",
+      "breakpoints": true
     }
   ]
 }

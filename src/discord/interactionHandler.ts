@@ -8,7 +8,11 @@ export type ChatInputInteractionLike = {
   user: { id: string };
   memberPermissions: { has(permission: bigint): boolean } | null;
   isChatInputCommand(): boolean;
+  deferred: boolean;
+  replied: boolean;
   reply(input: { content: string; flags: MessageFlags.Ephemeral }): Promise<unknown>;
+  deferReply(input: { flags: MessageFlags.Ephemeral }): Promise<unknown>;
+  editReply(input: { content: string }): Promise<unknown>;
   options: {
     getSubcommand(): string;
     getString(name: string): string | null;
@@ -18,9 +22,17 @@ export type ChatInputInteractionLike = {
 };
 
 export type BoosterRoleCommandService = {
-  claimRole(input: { guildId: string; userId: string; name: string; color: string | null; icon?: RoleIcon | null; isBoosting: boolean }): Promise<BoosterRoleRecord | { roleId: string }>;
+  claimRole(input: {
+    guildId: string;
+    userId: string;
+    name: string;
+    color: string | null;
+    color2?: string | null;
+    icon?: RoleIcon | null;
+    isBoosting: boolean;
+  }): Promise<BoosterRoleRecord | { roleId: string }>;
   renameRole(input: { guildId: string; userId: string; name: string }): Promise<void>;
-  recolorRole(input: { guildId: string; userId: string; color: string }): Promise<void>;
+  recolorRole(input: { guildId: string; userId: string; color: string; color2?: string | null }): Promise<void>;
   setRoleIcon(input: { guildId: string; userId: string; icon: RoleIcon }): Promise<void>;
   deleteRole(input: { guildId: string; userId: string }): Promise<void>;
 };
@@ -41,6 +53,12 @@ export async function handleInteraction(
     const userId = interaction.user.id;
     const subcommand = interaction.options.getSubcommand();
 
+    // Defer reply for potentially slow commands (claim, icon) to avoid 10062 "Unknown interaction"
+    const shouldDefer = subcommand === "claim" || subcommand === "icon";
+    if (shouldDefer) {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    }
+
     if (subcommand === "claim") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
       const role = await service.claimRole({
@@ -48,10 +66,11 @@ export async function handleInteraction(
         userId,
         name: requireString(interaction, "name"),
         color: interaction.options.getString("color"),
+        color2: interaction.options.getString("color2"),
         icon: optionalIcon(interaction, "icon"),
         isBoosting: await deps.isBoosting(guildId, userId)
       });
-      await interaction.reply({ content: `Booster role created: <@&${role.roleId}>`, flags: MessageFlags.Ephemeral });
+      await interaction.editReply({ content: `Booster role created: <@&${role.roleId}>` });
       return;
     }
 
@@ -64,7 +83,7 @@ export async function handleInteraction(
 
     if (subcommand === "recolor") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
-      await service.recolorRole({ guildId, userId, color: requireString(interaction, "color") });
+      await service.recolorRole({ guildId, userId, color: requireString(interaction, "color"), color2: interaction.options.getString("color2") });
       await interaction.reply({ content: "Booster role color updated.", flags: MessageFlags.Ephemeral });
       return;
     }
@@ -72,7 +91,7 @@ export async function handleInteraction(
     if (subcommand === "icon") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.setRoleIcon({ guildId, userId, icon: requireIcon(interaction, "image") });
-      await interaction.reply({ content: "Booster role icon updated.", flags: MessageFlags.Ephemeral });
+      await interaction.editReply({ content: "Booster role icon updated." });
       return;
     }
 
@@ -95,7 +114,12 @@ export async function handleInteraction(
     throw new Error("Unknown booster-role subcommand");
   } catch (error) {
     logger.warn("Booster-role command failed", { error });
-    await interaction.reply({ content: toUserErrorMessage(error), flags: MessageFlags.Ephemeral });
+    // If already deferred, edit the reply instead of replying anew
+    if (interaction.deferred) {
+      await interaction.editReply({ content: toUserErrorMessage(error) });
+    } else {
+      await interaction.reply({ content: toUserErrorMessage(error), flags: MessageFlags.Ephemeral });
+    }
   }
 }
 

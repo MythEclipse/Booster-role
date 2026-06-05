@@ -3,6 +3,7 @@ import {
   assertRoleNameIsAvailable,
   assertRolePositionIsSafe,
   normalizeHexColor,
+  normalizeOptionalHexColor,
   validateRoleName,
   type ExistingRole
 } from "../domain/roleGuards";
@@ -13,6 +14,7 @@ export type BoosterRoleRecord = {
   roleId: string;
   name: string;
   color: string | null;
+  color2: string | null;
   icon: string | null;
   createdAt: number;
   updatedAt: number;
@@ -26,8 +28,8 @@ export type BoosterRoleStore = {
 
 export type RoleRepository = {
   listRoles(): Promise<ExistingRole[]>;
-  createRole(input: { name: string; color: string | null; permissions: string[]; position: number }): Promise<{ id: string }>;
-  updateRole(roleId: string, input: { name?: string; color?: string | null; icon?: string | null }): Promise<void>;
+  createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }): Promise<{ id: string }>;
+  updateRole(roleId: string, input: { name?: string; color?: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; icon?: string | null }): Promise<void>;
   assignRole(userId: string, roleId: string): Promise<void>;
   removeRole(userId: string, roleId: string): Promise<void>;
   deleteRole(roleId: string): Promise<void>;
@@ -61,6 +63,7 @@ export class BoosterRoleService {
     userId: string;
     name: string;
     color: string | null;
+    color2?: string | null;
     icon?: RoleIcon | null;
     isBoosting: boolean;
   }): Promise<BoosterRoleRecord> {
@@ -73,13 +76,15 @@ export class BoosterRoleService {
     }
 
     const name = validateRoleName(input.name);
-    const color = input.color ? normalizeHexColor(input.color) : null;
+    const color = normalizeOptionalHexColor(input.color);
+    const color2 = normalizeOptionalHexColor(input.color2 ?? null);
+    const colors = resolveGradientColors(color, color2);
     assertRoleNameIsAvailable(name, await this.roles.listRoles());
 
     const position = this.options.anchorPosition - 1;
     assertRolePositionIsSafe(position, this.options.anchorPosition);
 
-    const role = await this.roles.createRole({ name, color, permissions: [], position });
+    const role = await this.roles.createRole({ name, color, colors, permissions: [], position });
     let assigned = false;
 
     try {
@@ -98,6 +103,7 @@ export class BoosterRoleService {
         roleId: role.id,
         name,
         color,
+        color2,
         icon: input.icon?.dataUri ?? null,
         createdAt: timestamp,
         updatedAt: timestamp
@@ -119,10 +125,13 @@ export class BoosterRoleService {
     await this.roles.updateRole(record.roleId, { name });
   }
 
-  async recolorRole(input: { guildId: string; userId: string; color: string }): Promise<void> {
-    const { guildId, userId, color } = input;
+  async recolorRole(input: { guildId: string; userId: string; color: string; color2?: string | null }): Promise<void> {
+    const { guildId, userId, color, color2 } = input;
     const record = await this.getUserRecord(guildId, userId);
-    await this.roles.updateRole(record.roleId, { color: normalizeHexColor(color) });
+    const primaryColor = normalizeHexColor(color);
+    const secondaryColor = normalizeOptionalHexColor(color2 ?? null);
+    const colors = resolveGradientColors(primaryColor, secondaryColor);
+    await this.roles.updateRole(record.roleId, { colors });
   }
 
   async setRoleIcon(input: { guildId: string; userId: string; icon: RoleIcon }): Promise<void> {
@@ -181,4 +190,12 @@ async function ignoreRollbackError(action: () => Promise<void>): Promise<void> {
     await action();
   } catch {
   }
+}
+
+function resolveGradientColors(color: string | null, color2: string | null): { primaryColor: string; secondaryColor?: string } | null {
+  if (!color) return null;
+  if (color2) {
+    return { primaryColor: color, secondaryColor: color2 };
+  }
+  return { primaryColor: color };
 }

@@ -1,4 +1,4 @@
-import type { ColorResolvable, Guild, Role } from "discord.js";
+import type { ColorResolvable, Guild, Role, RoleColorsResolvable } from "discord.js";
 import type { RoleRepository } from "./boosterRoleService";
 
 export class DiscordRoleRepository implements RoleRepository {
@@ -11,10 +11,11 @@ export class DiscordRoleRepository implements RoleRepository {
     return this.guild.roles.cache.map((role) => ({ id: role.id, name: role.name }));
   }
 
-  async createRole(input: { name: string; color: string | null; permissions: string[]; position: number }): Promise<{ id: string }> {
+  async createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }): Promise<{ id: string }> {
+    const colors = input.colors ?? (input.color ? { primaryColor: input.color as ColorResolvable } : undefined);
     const role = await this.guild.roles.create({
       name: input.name,
-      colors: toDiscordColors(input.color),
+      colors: colors as RoleColorsResolvable | undefined,
       permissions: 0n
     });
 
@@ -22,11 +23,11 @@ export class DiscordRoleRepository implements RoleRepository {
     return { id: role.id };
   }
 
-  async updateRole(roleId: string, input: { name?: string; color?: string | null; icon?: string | null }): Promise<void> {
+  async updateRole(roleId: string, input: { name?: string; color?: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; icon?: string | null }): Promise<void> {
     const role = await this.fetchRole(roleId);
     await role.edit({
       name: input.name,
-      colors: input.color === undefined ? undefined : toDiscordColors(input.color),
+      colors: input.colors === undefined ? undefined : input.colors as RoleColorsResolvable,
       icon: input.icon === undefined ? undefined : input.icon
     });
   }
@@ -55,8 +56,4 @@ export class DiscordRoleRepository implements RoleRepository {
     if (!role) throw new Error("Discord role not found");
     return role;
   }
-}
-
-function toDiscordColors(color: string | null): { primaryColor: ColorResolvable } | undefined {
-  return color === null ? undefined : { primaryColor: color as ColorResolvable };
 }

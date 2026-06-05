@@ -39,13 +39,13 @@ class FakeRoleRepository implements RoleRepository {
     return [...this.roles.values()];
   }
 
-  async createRole(input: { name: string; color: string | null; permissions: string[]; position: number }) {
+  async createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }) {
     const id = `created-${this.roles.size + 1}`;
     this.roles.set(id, { id, ...input });
     return { id };
   }
 
-  async updateRole(roleId: string, input: { name?: string; color?: string | null; icon?: string | null }) {
+  async updateRole(roleId: string, input: { name?: string; color?: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; icon?: string | null }) {
     const role = this.roles.get(roleId);
     if (!role) throw new Error("Role does not exist");
     this.roles.set(roleId, { ...role, ...input });

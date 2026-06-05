@@ -1,0 +1,1 @@
+ALTER TABLE "booster_roles" ADD COLUMN "color2" text;

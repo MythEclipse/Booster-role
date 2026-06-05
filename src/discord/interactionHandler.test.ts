@@ -10,6 +10,8 @@ class FakeInteraction implements ChatInputInteractionLike {
   guildId: string | null = "guild";
   memberPermissions: { has(permission: bigint): boolean } | null = null;
   replies: Reply[] = [];
+  deferred = false;
+  replied = false;
 
   constructor(private readonly subcommand: string, private readonly values: Record<string, unknown> = {}) {}
 
@@ -19,6 +21,15 @@ class FakeInteraction implements ChatInputInteractionLike {
 
   async reply(reply: Reply): Promise<void> {
     this.replies.push(reply);
+    this.replied = true;
+  }
+
+  async deferReply(_input: { flags: MessageFlags.Ephemeral }): Promise<void> {
+    this.deferred = true;
+  }
+
+  async editReply(input: { content: string }): Promise<void> {
+    this.replies.push({ content: input.content, flags: MessageFlags.Ephemeral });
   }
 
   options = {
@@ -55,13 +66,14 @@ class FakeService implements BoosterRoleCommandService {
 }
 
 describe("handleInteraction", () => {
-  test("replies to claim command", async () => {
+  test("replies to claim command (deferred)", async () => {
     const interaction = new FakeInteraction("claim", { name: "Test", color: "#AABBCC" });
     const service = new FakeService();
 
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(service.calls).toEqual(["claim"]);
+    expect(interaction.deferred).toBe(true);
     expect(interaction.replies[0]).toEqual({ content: "Booster role created: <@&role-1>", flags: MessageFlags.Ephemeral });
   });
 
@@ -109,7 +121,7 @@ describe("handleInteraction", () => {
     expect(interaction.replies[0]).toEqual({ content: "Administrator permission is required", flags: MessageFlags.Ephemeral });
   });
 
-  test("turns service errors into private replies", async () => {
+  test("turns service errors into private replies (uses editReply when deferred)", async () => {
     const interaction = new FakeInteraction("claim", { name: "VIP" });
     const service = new FakeService();
     service.claimRole = async () => {
@@ -118,10 +130,12 @@ describe("handleInteraction", () => {
 
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
+    // claim is deferred, so errors use editReply
+    expect(interaction.deferred).toBe(true);
     expect(interaction.replies[0]).toEqual({ content: "Role name is already used", flags: MessageFlags.Ephemeral });
   });
 
-  test("hides failed query details from user replies", async () => {
+  test("hides failed query details from user replies (deferred)", async () => {
     const interaction = new FakeInteraction("claim", { name: "VIP" });
     const service = new FakeService();
     service.claimRole = async () => {
@@ -130,6 +144,20 @@ describe("handleInteraction", () => {
 
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
+    expect(interaction.deferred).toBe(true);
     expect(interaction.replies[0]).toEqual({ content: "Failed to save booster role. Any created role was cleaned up. Try again.", flags: MessageFlags.Ephemeral });
+  });
+
+  test("non-deferred commands still use reply for errors", async () => {
+    const interaction = new FakeInteraction("rename", { name: "New Name" });
+    const service = new FakeService();
+    service.renameRole = async () => {
+      throw new Error("Some error");
+    };
+
+    await handleInteraction(interaction, service, { isBoosting: async () => true });
+
+    expect(interaction.deferred).toBe(false);
+    expect(interaction.replies[0]).toEqual({ content: "Some error", flags: MessageFlags.Ephemeral });
   });
 });
