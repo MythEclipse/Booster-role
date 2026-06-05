@@ -1,6 +1,7 @@
 import type { Client } from "discord.js";
 import type { AppConfig } from "../config";
 import { createDb } from "../db";
+import { logger } from "../logger";
 import { BoosterRoleService } from "../services/boosterRoleService";
 import { DrizzleBoosterRoleStore } from "../services/drizzleBoosterRoleStore";
 import { DiscordRoleRepository } from "../services/discordRoleRepository";
@@ -33,9 +34,12 @@ export function attachBotHandlers(client: Client, config: AppConfig): void {
     const hadBooster = oldMember.roles.cache.has(eligibilityRoleId);
     const hasBooster = newMember.roles.cache.has(eligibilityRoleId);
     if (!hadBooster && hasBooster && config.boosterGreetingChannelId) {
-      await sendBoostGreeting(newMember, config.boosterGreetingChannelId).catch((err) => {
-        logger.error("Failed to send boost greeting", { error: String(err), userId: newMember.id });
-      });
+      const channel = newMember.guild.channels.cache.get(config.boosterGreetingChannelId);
+      if (channel && "send" in channel) {
+        await sendBoostGreeting(channel as { send(input: { content: string }): Promise<unknown> }, newMember.id, config.boosterGreetingChannelId).catch((err) => {
+          logger.error("Failed to send boost greeting", { error: String(err), userId: newMember.id });
+        });
+      }
     }
 
     // Handle boost loss (existing behaviour)
