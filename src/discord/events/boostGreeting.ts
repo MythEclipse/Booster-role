@@ -10,8 +10,8 @@ export async function sendBoostGreeting(
   greetingChannelId: string,
 ): Promise<void> {
   const message =
-    `🎉 Thank you for boosting <@${userId}>! ` +
-    `You can now claim a custom role using \`/booster-role claim\` in <#${greetingChannelId}>.`;
+    `🎉 Makasih udah ngeboost <@${userId}>! ` +
+    `Sekarang kamu bisa claim custom role pake \`/booster-role claim\` di sini.`;
 
   await channel.send({ content: message });
 
