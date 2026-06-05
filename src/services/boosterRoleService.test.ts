@@ -8,6 +8,10 @@ class MemoryRoleStore {
     return this.records.get(`${guildId}:${userId}`) ?? null;
   }
 
+  async findByGuild(guildId: string): Promise<BoosterRoleRecord[]> {
+    return Array.from(this.records.values()).filter((r) => r.guildId === guildId);
+  }
+
   async create(record: BoosterRoleRecord): Promise<void> {
     this.records.set(`${record.guildId}:${record.userId}`, record);
   }

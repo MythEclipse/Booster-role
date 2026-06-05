@@ -22,6 +22,7 @@ export type BoosterRoleRecord = {
 
 export type BoosterRoleStore = {
   findByUser(guildId: string, userId: string): Promise<BoosterRoleRecord | null>;
+  findByGuild(guildId: string): Promise<BoosterRoleRecord[]>;
   create(record: BoosterRoleRecord): Promise<void>;
   delete(guildId: string, userId: string): Promise<void>;
 };

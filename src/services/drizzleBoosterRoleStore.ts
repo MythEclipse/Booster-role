@@ -2,13 +2,17 @@ import { and, eq } from "drizzle-orm";
 import { boosterRoles } from "../db/schema";
 import type { BoosterRoleRecord, BoosterRoleStore } from "./boosterRoleService";
 
+type SelectQuery = {
+  where(condition: unknown): QueryWithLimit & Promise<BoosterRoleRecord[]>;
+};
+
+type QueryWithLimit = {
+  limit(count: number): Promise<BoosterRoleRecord[]> | BoosterRoleRecord[];
+};
+
 type DatabaseLike = {
   select(): {
-    from(table: typeof boosterRoles): {
-      where(condition: unknown): {
-        limit(count: number): Promise<BoosterRoleRecord[]> | BoosterRoleRecord[];
-      };
-    };
+    from(table: typeof boosterRoles): SelectQuery;
   };
   insert(table: typeof boosterRoles): {
     values(record: BoosterRoleRecord): Promise<unknown> | unknown;
@@ -29,6 +33,13 @@ export class DrizzleBoosterRoleStore implements BoosterRoleStore {
       .limit(1);
 
     return rows[0] ?? null;
+  }
+
+  async findByGuild(guildId: string): Promise<BoosterRoleRecord[]> {
+    return await this.db
+      .select()
+      .from(boosterRoles)
+      .where(eq(boosterRoles.guildId, guildId));
   }
 
   async create(record: BoosterRoleRecord): Promise<void> {
