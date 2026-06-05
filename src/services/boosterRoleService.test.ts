@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { BoosterRoleService, type BoosterRoleRecord, type RoleRepository } from "./boosterRoleService";
+import { BoosterRoleService } from "./boosterRoleService";
+import type { BoosterRoleRecord } from "./drizzleBoosterRoleStore";
+import type { RoleRepository } from "./discordRoleRepository";
+import { ValidationError, NotFoundError, PermissionError } from "../domain/errors";
 
 class MemoryRoleStore {
   private records = new Map<string, BoosterRoleRecord>();
@@ -28,7 +31,7 @@ class FailingCreateRoleStore extends MemoryRoleStore {
 }
 
 class FakeRoleRepository implements RoleRepository {
-  roles = new Map<string, { id: string; name: string; permissions: string[]; position: number; color: string | null; icon?: string | null }>();
+  roles = new Map<string, { id: string; name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number; icon?: string | null }>();
   deletedRoleIds: string[] = [];
   assignedRoles: Array<{ userId: string; roleId: string }> = [];
   removedRoles: Array<{ userId: string; roleId: string }> = [];
