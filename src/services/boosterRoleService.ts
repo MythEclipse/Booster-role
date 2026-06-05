@@ -7,38 +7,16 @@ import {
   normalizeHexColor,
   normalizeOptionalHexColor,
   validateRoleName,
-  type ExistingRole,
   type ManagedRoleIdentity
 } from "../domain/roleGuards";
 import { ValidationError, NotFoundError } from "../domain/errors";
 
-export type BoosterRoleRecord = {
-  guildId: string;
-  userId: string;
-  roleId: string;
-  name: string;
-  color: string | null;
-  color2: string | null;
-  icon: string | null;
-  createdAt: number;
-  updatedAt: number;
-};
+import type { BoosterRoleRecord, BoosterRoleStore } from "./drizzleBoosterRoleStore";
+import type { RoleRepository } from "./discordRoleRepository";
 
-export type BoosterRoleStore = {
-  findByUser(guildId: string, userId: string): Promise<BoosterRoleRecord | null>;
-  findByGuild(guildId: string): Promise<BoosterRoleRecord[]>;
-  create(record: BoosterRoleRecord): Promise<void>;
-  delete(guildId: string, userId: string): Promise<void>;
-};
-
-export type RoleRepository = {
-  listRoles(): Promise<ExistingRole[]>;
-  createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }): Promise<{ id: string }>;
-  updateRole(roleId: string, input: { name?: string; color?: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; icon?: string | null }): Promise<void>;
-  assignRole(userId: string, roleId: string): Promise<void>;
-  removeRole(userId: string, roleId: string): Promise<void>;
-  deleteRole(roleId: string): Promise<void>;
-};
+// Re-export for consumers that import from this module
+export type { BoosterRoleRecord, BoosterRoleStore };
+export type { RoleRepository } from "./discordRoleRepository";
 
 export type RoleIcon = {
   contentType: string;

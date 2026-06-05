@@ -27,7 +27,7 @@ client.once("clientReady", () => {
   startBoostCleanup(
     client,
     store,
-    (guild) => new DiscordRoleRepository(guild, config.boosterRoleAnchorRoleId),
+    (guild) => new DiscordRoleRepository(guild),
     {
       intervalMs: config.boostCleanupIntervalMs,
       boosterEligibilityRoleId: config.boosterEligibilityRoleId,

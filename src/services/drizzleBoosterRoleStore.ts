@@ -1,6 +1,24 @@
 import { and, eq } from "drizzle-orm";
 import { boosterRoles } from "../db/schema";
-import type { BoosterRoleRecord, BoosterRoleStore } from "./boosterRoleService";
+
+export type BoosterRoleRecord = {
+  guildId: string;
+  userId: string;
+  roleId: string;
+  name: string;
+  color: string | null;
+  color2: string | null;
+  icon: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type BoosterRoleStore = {
+  findByUser(guildId: string, userId: string): Promise<BoosterRoleRecord | null>;
+  findByGuild(guildId: string): Promise<BoosterRoleRecord[]>;
+  create(record: BoosterRoleRecord): Promise<void>;
+  delete(guildId: string, userId: string): Promise<void>;
+};
 
 type SelectQuery = {
   where(condition: unknown): QueryWithLimit & Promise<BoosterRoleRecord[]>;

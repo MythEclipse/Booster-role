@@ -16,7 +16,7 @@ export function attachBotHandlers(client: Client, config: AppConfig): void {
 
     const service = new BoosterRoleService(
       store,
-      new DiscordRoleRepository(interaction.guild, config.boosterRoleAnchorRoleId),
+      new DiscordRoleRepository(interaction.guild),
       { anchorPosition: resolveAnchorPosition(interaction.guild, config.boosterRoleAnchorRoleId) }
     );
 
@@ -28,7 +28,7 @@ export function attachBotHandlers(client: Client, config: AppConfig): void {
   client.on("guildMemberUpdate", async (oldMember, newMember) => {
     const service = new BoosterRoleService(
       store,
-      new DiscordRoleRepository(newMember.guild, config.boosterRoleAnchorRoleId),
+      new DiscordRoleRepository(newMember.guild),
       { anchorPosition: resolveAnchorPosition(newMember.guild, config.boosterRoleAnchorRoleId) }
     );
 

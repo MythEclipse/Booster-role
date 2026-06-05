@@ -1,10 +1,17 @@
 import type { ColorResolvable, Guild, Role, RoleColorsResolvable } from "discord.js";
-import type { RoleRepository } from "./boosterRoleService";
+import type { ExistingRole } from "../domain/roleGuards";
+
+export type RoleRepository = {
+  listRoles(): Promise<ExistingRole[]>;
+  createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }): Promise<{ id: string }>;
+  updateRole(roleId: string, input: { name?: string; color?: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; icon?: string | null }): Promise<void>;
+  assignRole(userId: string, roleId: string): Promise<void>;
+  removeRole(userId: string, roleId: string): Promise<void>;
+  deleteRole(roleId: string): Promise<void>;
+};
 
 export class DiscordRoleRepository implements RoleRepository {
-  constructor(private readonly guild: Guild, anchorRoleId: string | null) {
-    void anchorRoleId;
-  }
+  constructor(private readonly guild: Guild) {}
 
   async listRoles() {
     await this.guild.roles.fetch();
