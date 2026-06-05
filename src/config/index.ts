@@ -6,6 +6,7 @@ export type AppConfig = {
   boosterRoleAnchorRoleId: string | null;
   boosterEligibilityRoleId: string;
   boostCleanupIntervalMs: number;
+  boosterGreetingChannelId: string | null;
 };
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): AppConfig {
@@ -16,7 +17,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     databaseUrl: env.DATABASE_URL ?? "postgresql://booster_role:booster_role@localhost:5432/booster_role",
     boosterRoleAnchorRoleId: env.BOOSTER_ROLE_ANCHOR_ROLE_ID ?? null,
     boosterEligibilityRoleId: env.BOOSTER_ELIGIBILITY_ROLE_ID ?? "1206431347925852162",
-    boostCleanupIntervalMs: Number(env.BOOST_CLEANUP_INTERVAL_MS) || 5 * 60 * 1000
+    boostCleanupIntervalMs: Number(env.BOOST_CLEANUP_INTERVAL_MS) || 5 * 60 * 1000,
+    boosterGreetingChannelId: env.BOOSTER_GREETING_CHANNEL_ID ?? null
   };
 }
 
