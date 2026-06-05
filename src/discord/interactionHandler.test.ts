@@ -1,8 +1,8 @@
-import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { PermissionFlagsBits } from "discord.js";
 import { describe, expect, test } from "bun:test";
 import { handleInteraction, type BoosterRoleCommandService, type ChatInputInteractionLike } from "./interactionHandler";
 
-type Reply = { content: string; flags: MessageFlags.Ephemeral };
+type Reply = { content: string; flags?: number };
 
 class FakeInteraction implements ChatInputInteractionLike {
   commandName = "booster-role";
@@ -24,12 +24,12 @@ class FakeInteraction implements ChatInputInteractionLike {
     this.replied = true;
   }
 
-  async deferReply(_input: { flags: MessageFlags.Ephemeral }): Promise<void> {
+  async deferReply(): Promise<void> {
     this.deferred = true;
   }
 
   async editReply(input: { content: string }): Promise<void> {
-    this.replies.push({ content: input.content, flags: MessageFlags.Ephemeral });
+    this.replies.push({ content: input.content });
   }
 
   options = {
@@ -74,7 +74,7 @@ describe("handleInteraction", () => {
 
     expect(service.calls).toEqual(["claim"]);
     expect(interaction.deferred).toBe(true);
-    expect(interaction.replies[0]).toEqual({ content: "Booster role created: <@&role-1>", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Booster role created: <@&role-1>" });
   });
 
   test("routes update subcommands and replies", async () => {
@@ -85,7 +85,6 @@ describe("handleInteraction", () => {
       await handleInteraction(interaction, service, { isBoosting: async () => true });
 
       expect(service.calls).toEqual([subcommand]);
-      expect(interaction.replies[0]?.flags).toBe(MessageFlags.Ephemeral);
     }
   });
 
@@ -96,7 +95,7 @@ describe("handleInteraction", () => {
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(service.calls).toEqual(["delete:user"]);
-    expect(interaction.replies[0]).toEqual({ content: "Booster role deleted.", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Booster role deleted." });
   });
 
   test("routes admin delete command for target user", async () => {
@@ -107,7 +106,7 @@ describe("handleInteraction", () => {
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(service.calls).toEqual(["delete:target-user"]);
-    expect(interaction.replies[0]).toEqual({ content: "Booster role deleted by admin.", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Booster role deleted by admin." });
   });
 
   test("rejects admin delete without Administrator permission", async () => {
@@ -118,7 +117,7 @@ describe("handleInteraction", () => {
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(service.calls).toEqual([]);
-    expect(interaction.replies[0]).toEqual({ content: "Administrator permission is required", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Administrator permission is required" });
   });
 
   test("turns service errors into private replies (uses editReply when deferred)", async () => {
@@ -132,7 +131,7 @@ describe("handleInteraction", () => {
 
     // claim is deferred, so errors use editReply
     expect(interaction.deferred).toBe(true);
-    expect(interaction.replies[0]).toEqual({ content: "Role name is already used", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Role name is already used" });
   });
 
   test("hides failed query details from user replies (deferred)", async () => {
@@ -145,7 +144,7 @@ describe("handleInteraction", () => {
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(interaction.deferred).toBe(true);
-    expect(interaction.replies[0]).toEqual({ content: "Failed to save booster role. Any created role was cleaned up. Try again.", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Failed to save booster role. Any created role was cleaned up. Try again." });
   });
 
   test("non-deferred commands still use reply for errors", async () => {
@@ -158,6 +157,6 @@ describe("handleInteraction", () => {
     await handleInteraction(interaction, service, { isBoosting: async () => true });
 
     expect(interaction.deferred).toBe(false);
-    expect(interaction.replies[0]).toEqual({ content: "Some error", flags: MessageFlags.Ephemeral });
+    expect(interaction.replies[0]).toEqual({ content: "Some error" });
   });
 });

@@ -10,8 +10,8 @@ export type ChatInputInteractionLike = {
   isChatInputCommand(): boolean;
   deferred: boolean;
   replied: boolean;
-  reply(input: { content: string; flags: MessageFlags.Ephemeral }): Promise<unknown>;
-  deferReply(input: { flags: MessageFlags.Ephemeral }): Promise<unknown>;
+  reply(input: { content: string; flags?: MessageFlags.Ephemeral }): Promise<unknown>;
+  deferReply(input?: { flags?: number }): Promise<unknown>;
   editReply(input: { content: string }): Promise<unknown>;
   options: {
     getSubcommand(): string;
@@ -56,7 +56,7 @@ export async function handleInteraction(
     // Defer reply for potentially slow commands (claim, icon) to avoid 10062 "Unknown interaction"
     const shouldDefer = subcommand === "claim" || subcommand === "icon";
     if (shouldDefer) {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      await interaction.deferReply();
     }
 
     if (subcommand === "claim") {
@@ -77,14 +77,14 @@ export async function handleInteraction(
     if (subcommand === "rename") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.renameRole({ guildId, userId, name: requireString(interaction, "name") });
-      await interaction.reply({ content: "Booster role renamed.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Booster role renamed." });
       return;
     }
 
     if (subcommand === "recolor") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.recolorRole({ guildId, userId, color: requireString(interaction, "color"), color2: interaction.options.getString("color2") });
-      await interaction.reply({ content: "Booster role color updated.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Booster role color updated." });
       return;
     }
 
@@ -98,7 +98,7 @@ export async function handleInteraction(
     if (subcommand === "delete") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
       await service.deleteRole({ guildId, userId });
-      await interaction.reply({ content: "Booster role deleted.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Booster role deleted." });
       return;
     }
 
@@ -107,7 +107,7 @@ export async function handleInteraction(
       const targetUserId = requireUser(interaction, "user").id;
       logger.info("Handling booster-role admin command", { guildId, userId, subcommand, targetUserId });
       await service.deleteRole({ guildId, userId: targetUserId });
-      await interaction.reply({ content: "Booster role deleted by admin.", flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: "Booster role deleted by admin." });
       return;
     }
 
@@ -118,7 +118,7 @@ export async function handleInteraction(
     if (interaction.deferred) {
       await interaction.editReply({ content: toUserErrorMessage(error) });
     } else {
-      await interaction.reply({ content: toUserErrorMessage(error), flags: MessageFlags.Ephemeral });
+      await interaction.reply({ content: toUserErrorMessage(error) });
     }
   }
 }
