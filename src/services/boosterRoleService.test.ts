@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { BoosterRoleService } from "./boosterRoleService";
 import type { BoosterRoleRecord } from "./drizzleBoosterRoleStore";
 import type { RoleRepository } from "./discordRoleRepository";
-import { ValidationError, NotFoundError, PermissionError } from "../domain/errors";
 
 class MemoryRoleStore {
   private records = new Map<string, BoosterRoleRecord>();
@@ -48,7 +47,7 @@ class FakeRoleRepository implements RoleRepository {
 
   async createRole(input: { name: string; color: string | null; colors?: { primaryColor: string; secondaryColor?: string; tertiaryColor?: string } | null; permissions: string[]; position: number }) {
     const id = `created-${this.roles.size + 1}`;
-    this.roles.set(id, { id, ...input });
+    this.roles.set(id, { id, name: input.name, color: input.color, colors: input.colors, permissions: input.permissions, position: input.position });
     return { id };
   }
 
@@ -56,6 +55,10 @@ class FakeRoleRepository implements RoleRepository {
     const role = this.roles.get(roleId);
     if (!role) throw new Error("Role does not exist");
     this.roles.set(roleId, { ...role, ...input });
+  }
+
+  getRole(roleId: string) {
+    return this.roles.get(roleId) ?? null;
   }
 
   async assignRole(userId: string, roleId: string) {
@@ -159,5 +162,56 @@ describe("BoosterRoleService", () => {
     expect(roles.removedRoles).toEqual([{ userId: "user", roleId: "created-1" }]);
     expect(roles.deletedRoleIds).toEqual(["created-1"]);
     expect(roles.roles.has("created-1")).toBe(false);
+  });
+
+  test("recolors only the stored role owned by the user", async () => {
+    const store = new MemoryRoleStore();
+    const roles = new FakeRoleRepository([]);
+    const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
+
+    await service.recolorRole({ guildId: "guild", userId: "user", color: "#FF0000" });
+
+    const updated = roles.getRole(claimed.roleId);
+    expect(updated).not.toBeNull();
+    expect(updated!.colors).toEqual({ primaryColor: "#FF0000" });
+
+    // Other user cannot recolor
+    await expect(service.recolorRole({ guildId: "guild", userId: "attacker", color: "#00FF00" })).rejects.toThrow("No booster role found");
+  });
+
+  test("recolors role with gradient colors (primary + secondary)", async () => {
+    const store = new MemoryRoleStore();
+    const roles = new FakeRoleRepository([]);
+    const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
+
+    await service.recolorRole({ guildId: "guild", userId: "user", color: "#FF0000", color2: "#0000FF" });
+
+    const updated = roles.getRole(claimed.roleId);
+    expect(updated).not.toBeNull();
+    expect(updated!.colors).toEqual({ primaryColor: "#FF0000", secondaryColor: "#0000FF" });
+  });
+
+  test("deletes the stored role owned by the user", async () => {
+    const store = new MemoryRoleStore();
+    const roles = new FakeRoleRepository([]);
+    const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
+    const claimed = await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
+
+    await service.deleteRole({ guildId: "guild", userId: "user" });
+
+    expect(roles.deletedRoleIds).toEqual([claimed.roleId]);
+    expect(roles.roles.has(claimed.roleId)).toBe(false);
+    expect(await store.findByUser("guild", "user")).toBeNull();
+  });
+
+  test("rejects delete by non-owner user", async () => {
+    const store = new MemoryRoleStore();
+    const roles = new FakeRoleRepository([]);
+    const service = new BoosterRoleService(store, roles, { anchorPosition: 10 });
+    await service.claimRole({ guildId: "guild", userId: "user", name: "First Role", color: null, isBoosting: true });
+
+    await expect(service.deleteRole({ guildId: "guild", userId: "attacker" })).rejects.toThrow("No booster role found");
   });
 });

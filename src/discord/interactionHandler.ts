@@ -141,11 +141,13 @@ export async function handleInteraction(
 }
 
 function toUserErrorMessage(error: unknown): string {
+  // Custom domain errors are safe to show directly
   if (error instanceof ValidationError || error instanceof NotFoundError || error instanceof PermissionError) {
     return error.message;
   }
 
   if (error instanceof Error) {
+    // Hide infrastructure/internal details
     if (error.message.includes("Missing Permissions")) {
       return "Bot is missing permissions or role position to manage this role.";
     }
@@ -153,6 +155,9 @@ function toUserErrorMessage(error: unknown): string {
     if (error.message.includes("Failed query") || error.message.includes("insert")) {
       return "Failed to save booster role. Any created role was cleaned up. Try again.";
     }
+
+    // Generic domain errors and validations are safe to show
+    return error.message;
   }
 
   return "Command failed";
