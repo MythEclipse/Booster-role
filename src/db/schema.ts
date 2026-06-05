@@ -8,6 +8,7 @@ export const boosterRoles = pgTable(
     roleId: text("role_id").notNull(),
     name: text("name").notNull(),
     color: text("color"),
+    color2: text("color2"),
     icon: text("icon"),
     createdAt: bigint("created_at", { mode: "number" }).notNull(),
     updatedAt: bigint("updated_at", { mode: "number" }).notNull()

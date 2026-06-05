@@ -75,6 +75,10 @@ export function normalizeHexColor(color: string): `#${string}` {
   return normalizedColor as `#${string}`;
 }
 
+export function normalizeOptionalHexColor(color: string | null): `#${string}` | null {
+  return color ? normalizeHexColor(color) : null;
+}
+
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
 }
