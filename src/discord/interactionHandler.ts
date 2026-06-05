@@ -1,6 +1,8 @@
 import { MessageFlags, PermissionFlagsBits } from "discord.js";
+import { z } from "zod";
 import { logger } from "../logger";
 import { ValidationError, NotFoundError, PermissionError } from "../domain/errors";
+import { claimOptions, renameOptions, recolorOptions } from "./schemas";
 import type { BoosterRoleRecord, RoleIcon } from "../services/boosterRoleService";
 
 export type ChatInputInteractionLike = {
@@ -62,12 +64,17 @@ export async function handleInteraction(
 
     if (subcommand === "claim") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
-      const role = await service.claimRole({
-        guildId,
-        userId,
+      const parsed = claimOptions.parse({
         name: requireString(interaction, "name"),
         color: interaction.options.getString("color"),
         color2: interaction.options.getString("color2"),
+      });
+      const role = await service.claimRole({
+        guildId,
+        userId,
+        name: parsed.name,
+        color: parsed.color ?? null,
+        color2: parsed.color2 ?? null,
         icon: optionalIcon(interaction, "icon"),
         isBoosting: await deps.isBoosting(guildId, userId)
       });
@@ -77,14 +84,19 @@ export async function handleInteraction(
 
     if (subcommand === "rename") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
-      await service.renameRole({ guildId, userId, name: requireString(interaction, "name") });
+      const parsed = renameOptions.parse({ name: requireString(interaction, "name") });
+      await service.renameRole({ guildId, userId, name: parsed.name });
       await interaction.reply({ content: "Booster role renamed." });
       return;
     }
 
     if (subcommand === "recolor") {
       logger.info("Handling booster-role command", { guildId, userId, subcommand });
-      await service.recolorRole({ guildId, userId, color: requireString(interaction, "color"), color2: interaction.options.getString("color2") });
+      const parsed = recolorOptions.parse({
+        color: requireString(interaction, "color"),
+        color2: interaction.options.getString("color2"),
+      });
+      await service.recolorRole({ guildId, userId, color: parsed.color, color2: parsed.color2 ?? null });
       await interaction.reply({ content: "Booster role color updated." });
       return;
     }
@@ -114,12 +126,16 @@ export async function handleInteraction(
 
     throw new Error("Unknown booster-role subcommand");
   } catch (error) {
-    logger.warn("Booster-role command failed", { error });
+    // Normalize Zod validation errors to our ValidationError type
+    const normalized = error instanceof z.ZodError
+      ? new ValidationError(error.errors.map(e => e.message).join("; "))
+      : error;
+    logger.warn("Booster-role command failed", { error: normalized instanceof Error ? normalized.message : String(normalized) });
     // If already deferred, edit the reply instead of replying anew
     if (interaction.deferred) {
-      await interaction.editReply({ content: toUserErrorMessage(error) });
+      await interaction.editReply({ content: toUserErrorMessage(normalized) });
     } else {
-      await interaction.reply({ content: toUserErrorMessage(error) });
+      await interaction.reply({ content: toUserErrorMessage(normalized) });
     }
   }
 }
