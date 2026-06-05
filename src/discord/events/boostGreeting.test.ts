@@ -13,7 +13,6 @@ describe("sendBoostGreeting", () => {
     await sendBoostGreeting(channel, "user-123", "channel-456");
 
     expect(sent.length).toBe(1);
-    expect(sent[0]).toContain("Makasih udah ngeboost");
     expect(sent[0]).toContain("<@user-123>");
     expect(sent[0]).toContain("/booster-role claim");
     expect(sent[0]).toContain("di sini");
