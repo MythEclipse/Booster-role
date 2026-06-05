@@ -128,7 +128,7 @@ export async function handleInteraction(
   } catch (error) {
     // Normalize Zod validation errors to our ValidationError type
     const normalized = error instanceof z.ZodError
-      ? new ValidationError(error.errors.map(e => e.message).join("; "))
+      ? new ValidationError(error.issues.map(e => e.message).join("; "))
       : error;
     logger.warn("Booster-role command failed", { error: normalized instanceof Error ? normalized.message : String(normalized) });
     // If already deferred, edit the reply instead of replying anew
