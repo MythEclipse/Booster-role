@@ -1,5 +1,6 @@
 import { PermissionFlagsBits } from "discord.js";
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import { expect } from "expect";
 import { handleInteraction, type BoosterRoleCommandService, type ChatInputInteractionLike } from "./interactionHandler";
 
 type Reply = { content: string; flags?: number };

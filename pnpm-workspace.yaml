@@ -1,0 +1,17 @@
+# pnpm workspace for the deployed booster-role payload.
+#
+# Single package, so this file exists only to whitelist the one lifecycle script
+# pnpm blocks by default. esbuild (pulled in transitively by tsx and drizzle-kit)
+# downloads a platform binary on install; without it, tsx cannot resolve the
+# TypeScript transform and every entry point fails at startup.
+#
+# The allow-list is written twice on purpose: pnpm 10 reads
+# `onlyBuiltDependencies`, pnpm 11+ reads `allowBuilds`. The VPS resolves pnpm
+# 10.33.2 through the `packageManager` field while a bare `pnpm` outside the
+# project is 12.6.0, so both spellings must be present or `pnpm install
+# --frozen-lockfile` dies with ERR_PNPM_IGNORED_BUILDS. Verified locally:
+# exit 1 on pnpm 12.6.0 with `onlyBuiltDependencies` alone, exit 0 with both.
+onlyBuiltDependencies:
+  - esbuild
+allowBuilds:
+  esbuild: true

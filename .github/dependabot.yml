@@ -1,6 +1,9 @@
 version: 2
 updates:
-  - package-ecosystem: "bun"
+  # Dependabot has no "pnpm" YAML value: GitHub's supported-ecosystems table maps
+  # the pnpm package manager to "npm", and it picks up pnpm-lock.yaml there.
+  # "bun" only works while a bun.lock exists — this repo moved to pnpm.
+  - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"

@@ -1,4 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import { expect } from "expect";
 import { BoosterRoleService } from "./boosterRoleService";
 import type { BoosterRoleRecord, BoosterRoleUpdate } from "./drizzleBoosterRoleStore";
 import type { RoleRepository } from "./discordRoleRepository";

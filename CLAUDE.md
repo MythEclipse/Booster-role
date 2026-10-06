@@ -8,7 +8,7 @@ This repository is currently a blank scaffold. There are no source files, README
 
 ## Target tech stack
 
-- Bun + TypeScript - primary runtime and language for fast Discord bot development.
+- Node.js 24 + TypeScript - primary runtime (run via tsx) and language for fast Discord bot development.
 - discord.js - Discord gateway, slash commands, guild member, and role APIs.
 - SQLite + Drizzle ORM - local persistent storage for booster role ownership and metadata.
 
@@ -16,12 +16,12 @@ This repository is currently a blank scaffold. There are no source files, README
 
 These commands are the intended workflow after `package.json` and scripts are created:
 
-- `bun install` - install dependencies.
-- `bun run dev` - run the bot locally.
-- `bun test` - run tests.
-- `bun test <path>` - run a single test file.
-- `bun run lint` - run linting.
-- `bun run db:generate` / `bun run db:migrate` - manage Drizzle migrations.
+- `pnpm install` - install dependencies.
+- `pnpm run dev` - run the bot locally.
+- `pnpm test` - run tests.
+- `pnpm test <path>` - run a single test file.
+- `pnpm run lint` - run linting.
+- `pnpm run db:generate` / `pnpm run db:migrate` - manage Drizzle migrations.
 
 ## Target architecture
 

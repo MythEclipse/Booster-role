@@ -4,14 +4,14 @@ Discord bot untuk memberi role custom kosmetik ke user yang sedang boost server.
 
 ## Tech stack
 
-- Bun + TypeScript
+- Node.js 24 + TypeScript
 - discord.js
 - PostgreSQL via Drizzle ORM
-- Bun test runner
+- Node.js test runner (`node:test`) dengan `expect`
 
 ## Prasyarat
 
-- Bun terinstall
+- Node.js 24 dan pnpm terinstall
 - Bot Discord dengan token dari Developer Portal
 - Test guild/server Discord
 - Bot punya permission `Manage Roles`
@@ -20,7 +20,7 @@ Discord bot untuk memberi role custom kosmetik ke user yang sedang boost server.
 ## Setup
 
 ```bash
-bun install
+pnpm install
 cp .env.example .env
 ```
 
@@ -43,8 +43,8 @@ LOG_LEVEL=info
 Generate dan jalankan migration setelah schema siap:
 
 ```bash
-bun run db:generate
-bun run db:migrate
+pnpm run db:generate
+pnpm run db:migrate
 ```
 
 Pastikan `DATABASE_URL` mengarah ke database PostgreSQL external (pool PgBouncer imrnes `100.121.180.82:6432`) sebelum menjalankan migration.
@@ -52,7 +52,7 @@ Pastikan `DATABASE_URL` mengarah ke database PostgreSQL external (pool PgBouncer
 ## Menjalankan bot
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 Saat startup, bot otomatis register slash command ke guild dari `DISCORD_GUILD_ID`, lalu menangani interaction command. Pastikan bot di-invite dengan scope `applications.commands`.
@@ -60,10 +60,10 @@ Saat startup, bot otomatis register slash command ke guild dari `DISCORD_GUILD_I
 ## Testing
 
 ```bash
-bun test
-bun test src/domain/roleGuards.test.ts
-bun run typecheck
-bun run lint
+pnpm test
+pnpm test src/domain/roleGuards.test.ts
+pnpm run typecheck
+pnpm run lint
 ```
 
 ## Keamanan role

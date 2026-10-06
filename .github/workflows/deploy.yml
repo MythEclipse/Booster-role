@@ -1,4 +1,4 @@
-name: Build & Deploy (Nix)
+name: Build & Deploy
 
 on:
   push:
@@ -11,102 +11,90 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      # version comes from packageManager in package.json (pnpm@10.33.2)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: "1.4.0"
+          node-version: 24
+          cache: pnpm
 
       - name: Install deps
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: bun run typecheck
+        run: pnpm run typecheck
 
       - name: Test
-        run: bun test
+        run: pnpm test
 
   build-and-deploy:
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: orangevps
 
     steps:
+      # Checkout is required: the source tarball and the deploy script are both
+      # shipped from THIS checkout, never from the payload live on the VPS.
       - uses: actions/checkout@v4
 
-      - uses: DeterminateSystems/nix-installer-action@v16
-        with:
-          determinate: false
-          extra-conf: |
-            sandbox = false
-            accept-flake-config = true
-
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
-        with:
-          use-flakehub: false
-
-      - name: Build & Deploy
+      - name: Setup SSH
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           set -eu
-          STORE_PATH=$(nix build . --impure --option sandbox false --no-link --print-out-paths | tail -1)
-          echo "Store path: $STORE_PATH"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          sed -i 's/\r$//' ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null 2>&1 || { echo "SSH key invalid"; exit 1; }
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          echo "SSH key OK for ${VPS_HOST}"
 
-          key_file=$(mktemp /tmp/deploy-key.XXXXXX)
-          printf '%s\n' "$VPS_SSH_KEY" > "$key_file"
-          chmod 600 "$key_file"
-          sed -i 's/\r$//' "$key_file"
-          ssh-keygen -y -f "$key_file" >/dev/null 2>&1 || { echo "SSH key invalid"; exit 1; }
-
-          export NIX_SSHOPTS="-i $key_file -o StrictHostKeyChecking=no"
-          nix copy --to "ssh://${VPS_USER}@${VPS_HOST}" "$STORE_PATH" 2>&1
-
-          ssh -i "$key_file" -o StrictHostKeyChecking=no "${VPS_USER}@${VPS_HOST}" "
-            set -eu
-            if [ -d /nix/var/nix/profiles/booster-role ] && [ ! -L /nix/var/nix/profiles/booster-role ]; then
-              rm -rf /nix/var/nix/profiles/booster-role
-            fi
-            nix-env --profile /nix/var/nix/profiles/booster-role --set $STORE_PATH
-            systemctl daemon-reload
-            systemctl enable booster-role 2>/dev/null || true
-            systemctl restart booster-role
-            for i in \$(seq 1 30); do
-              systemctl is-active --quiet booster-role && break
-              sleep 1
-            done
-            systemctl is-active booster-role || {
-              echo \"=== SERVICE FAILED — journal ===\"
-              journalctl -u booster-role -n 40 --no-pager
-              exit 1
-            }
-            systemctl status booster-role --no-pager 2>&1 | head -8
-          " 2>&1
-
-  cleanup:
-    # Bersihkan sampah Nix di VPS SETELAH deploy: hapus generasi profile lama
-    # + nix store gc. Profil yang sedang dipakai tidak disentuh.
-    needs: build-and-deploy
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Nix GC on VPS
+      - name: Ship source + deploy script to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          key_file=$(mktemp /tmp/gc-key.XXXXXX)
-          printf '%s\n' "$VPS_SSH_KEY" > "$key_file"
-          chmod 600 "$key_file"
-          sed -i 's/\r$//' "$key_file"
-          ssh -i "$key_file" -o StrictHostKeyChecking=no "${VPS_USER}@${VPS_HOST}" "sudo /usr/local/bin/nix-gc-vps.sh" || echo "⚠️ Nix GC gagal (non-fatal)"
-          rm -f "$key_file"
+          set -eu
+          # Exactly the tree the job above typechecked and tested.
+          tar --exclude='./.git' --exclude='./node_modules' --exclude='./.env' \
+              -czf /tmp/booster-role-src.tgz .
+          ls -lh /tmp/booster-role-src.tgz
+          scp -o BatchMode=yes /tmp/booster-role-src.tgz \
+              "$VPS_USER@$VPS_HOST:/tmp/booster-role-src.tgz"
+          scp -o BatchMode=yes scripts/deploy-direct.sh \
+              "$VPS_USER@$VPS_HOST:/tmp/booster-role-deploy.sh"
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -eu
+          ssh -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            "bash /tmp/booster-role-deploy.sh '$DEPLOY_SHA' /tmp/booster-role-src.tgz"
+
+      # Read-only confirmation for the CI log: the bot has no inbound listener,
+      # so service health is systemd state + journal, not an HTTP probe.
+      - name: Verify service on VPS
+        if: always()
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -o BatchMode=yes "$VPS_USER@$VPS_HOST" \
+            'systemctl is-active booster-role; systemctl show booster-role -p NRestarts --value; journalctl -u booster-role -n 20 --no-pager'
