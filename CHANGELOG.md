@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/asepharyana/Booster-role/compare/v1.0.0...v1.0.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* **ci:** stop embedding the release notes in the release commit ([3a16e04](https://github.com/asepharyana/Booster-role/commit/3a16e046f45738dfe75d5b76384776396fcf0b16))
+
 # 1.0.0 (2026-10-14)
 
 
