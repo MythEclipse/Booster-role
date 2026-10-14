@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/asepharyana/Booster-role/compare/v1.0.1...v1.0.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* **ci:** cap the release body, which GitHub limits to 125,000 chars ([3e7fa7e](https://github.com/asepharyana/Booster-role/commit/3e7fa7e0eda44a782aa2ad0cf776b55f3b1848a7))
+
 ## [1.0.1](https://github.com/asepharyana/Booster-role/compare/v1.0.0...v1.0.1) (2026-10-14)
 
 
