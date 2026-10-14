@@ -1,0 +1,9 @@
+{
+  "images": [
+    {
+      "package": "booster-role",
+      "context": ".",
+      "file": "Dockerfile"
+    }
+  ]
+}
