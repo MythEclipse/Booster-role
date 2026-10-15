@@ -15,3 +15,15 @@ onlyBuiltDependencies:
   - esbuild
 allowBuilds:
   esbuild: true
+
+# `minimumReleaseAge: 0` is DELIBERATE, and paired with
+# `cooldown: default-days: 3` in .github/dependabot.yml.
+#
+# Dependabot resolves with its OWN bundled pnpm (11.x/12.x) and ignores this
+# repo's `packageManager` pin — the same split the comment above describes from
+# the other direction. Since pnpm 11 that bundled version defaults
+# `minimumReleaseAge` to 1440 minutes, so a dependency released within the last
+# day is refused with ERR_PNPM_NO_MATURE_MATCHING_VERSION and the update job
+# dies. The cooldown keeps young versions from being PROPOSED; this stops the
+# install FAILING if one slips past. Both are required.
+minimumReleaseAge: 0
