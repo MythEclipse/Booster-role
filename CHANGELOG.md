@@ -1,3 +1,11 @@
+## [1.0.4](https://github.com/asepharyana/Booster-role/compare/v1.0.3...v1.0.4) (2026-10-16)
+
+
+### Bug Fixes
+
+* auto-fix code quality [skip ci] ([41c7602](https://github.com/asepharyana/Booster-role/commit/41c7602461a46c9c998c627adb6f91602adf3802))
+* auto-fix code quality [skip ci] ([0cbc114](https://github.com/asepharyana/Booster-role/commit/0cbc114ad2617c7bfc23d452589ad399e2014454))
+
 ## [1.0.3](https://github.com/asepharyana/Booster-role/compare/v1.0.2...v1.0.3) (2026-10-14)
 
 ## [1.0.2](https://github.com/asepharyana/Booster-role/compare/v1.0.1...v1.0.2) (2026-10-14)
